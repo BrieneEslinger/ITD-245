@@ -17,8 +17,8 @@ def load_data() -> pd.DataFrame:
     )
 
     # Ensure numeric columns are numeric
-    df["revenue"] = pd.to_numeric(
-        df["revenue"], errors="coerce"
+    df["sales"] = pd.to_numeric(
+        df["sales"], errors="coerce"
     )
 
     df["units_sold"] = pd.to_numeric(
@@ -50,14 +50,14 @@ def make_trend_chart(df: pd.DataFrame) -> px.Figure:
         return px.line()  # empty placeholder figure
     daily = df.groupby(df["order_date"].dt.date)["sales"].sum().reset_index()
     daily = daily.rename(columns={"order_date": "date"})
-    return px.line(daily, x="date", y="sales", labels={"sales": "Revenue ($)"})
+    return px.line(daily, x="date", y="sales", labels={"sales": "sales ($)"})
 
 def make_breakdown_chart(df: pd.DataFrame) -> px.Figure:
     if df.empty:
         return px.bar()
     agg = df.groupby("region")["sales"].sum().reset_index()
     return px.bar(agg, x="region", y="sales", color="region",
-                  labels={"sales": "Revenue ($)", "region": "Region"})
+                  labels={"sales": "sales ($)", "region": "Region"})
 
 
 st.set_page_config(page_title='Sales', layout='wide')
@@ -77,7 +77,7 @@ st.title('Sales dashboard')
 # KPI strip
 df = load_and_filter(region, date_range)
 c1, c2, c3 = st.columns(3)
-c1.metric('Revenue', f'${df.sales.sum():,.0f}')
+c1.metric('sales', f'${df.sales.sum():,.0f}')
 c2.metric('Orders', f'{len(df):,}')
 c3.metric('AOV', f'${df.sales.mean():.2f}')
 
