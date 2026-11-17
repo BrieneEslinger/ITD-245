@@ -8,31 +8,16 @@ import datetime as dt
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    df = pd.read_csv("sales.csv")
-
-    # Convert date column from text to datetime
-    df["date"] = pd.to_datetime(
-        df["date"],
-        errors="coerce"
-    )
-
-    # Ensure numeric columns are numeric
-    df["sales"] = pd.to_numeric(
-        df["sales"], errors="coerce"
-    )
-
-    df["units_sold"] = pd.to_numeric(
-        df["units_sold"], errors="coerce"
-    )
-
-    df["customers"] = pd.to_numeric(
-        df["customers"], errors="coerce"
-    )
-    return df
-
-
-df = load_data()
-
+    rng = np.random.default_rng(42)
+    n = 500
+    # Build a pool of the last 366 days, then pick random dates from it
+    pool = pd.date_range(end=dt.date.today(), periods=366, freq="D")
+    return pd.DataFrame({
+        "order_date": pool[rng.integers(0, len(pool), n)],
+        "region":  rng.choice(["N", "S", "E", "W"], n),
+        "product": rng.choice(["Widget", "Gadget", "Gizmo"], n),
+        "sales":   rng.normal(100, 25, n).clip(5).round(2),
+    })
 
 def load_and_filter(region: str, date_range) -> pd.DataFrame:
     df = load_data()
@@ -50,14 +35,14 @@ def make_trend_chart(df: pd.DataFrame) -> px.Figure:
         return px.line()  # empty placeholder figure
     daily = df.groupby(df["order_date"].dt.date)["sales"].sum().reset_index()
     daily = daily.rename(columns={"order_date": "date"})
-    return px.line(daily, x="date", y="sales", labels={"sales": "sales ($)"})
+    return px.line(daily, x="date", y="sales", labels={"sales": "Sales ($)"})
 
 def make_breakdown_chart(df: pd.DataFrame) -> px.Figure:
     if df.empty:
         return px.bar()
     agg = df.groupby("region")["sales"].sum().reset_index()
     return px.bar(agg, x="region", y="sales", color="region",
-                  labels={"sales": "sales ($)", "region": "Region"})
+                  labels={"sales": "Sales ($)", "region": "Region"})
 
 
 st.set_page_config(page_title='Sales', layout='wide')
@@ -73,11 +58,12 @@ with st.sidebar:
 
 # Main area
 st.title('Sales dashboard')
+st.header("My AI disclosure: I used your code to study and understand, as I really struggled getting it deployed on Streamlit.")
 
 # KPI strip
 df = load_and_filter(region, date_range)
 c1, c2, c3 = st.columns(3)
-c1.metric('sales', f'${df.sales.sum():,.0f}')
+c1.metric('Sales', f'${df.sales.sum():,.0f}')
 c2.metric('Orders', f'{len(df):,}')
 c3.metric('AOV', f'${df.sales.mean():.2f}')
 
